@@ -1,0 +1,62 @@
+{
+  "id": "P01",
+  "case": "Ed25519 device; Community Agent issues membership directly",
+  "now": 1793779200,
+  "started_at": 1793775600,
+  "audience": "https://offers.fascia.example",
+  "host_keys": "vectors:fascia_host_vector",
+  "registry": {
+    "communities": {
+      "6f1c2a9e-4b7d-4e8a-9c21-7d4e5f6a8b90": {
+        "status": "active",
+        "keys": [
+          {
+            "key": "did:key:zDnaenkGNQTqSPY9gbEfokMmMhGeqeQAwWdzVSaEAWQ42KQ4Y",
+            "state": "active"
+          },
+          {
+            "key": "did:key:zDnaeoUrXMkCDpsCwd3pHrYCpxWrdKfJWMNNQZgCTRExzzLsh",
+            "state": "retiring",
+            "retire_after": 1796371200
+          }
+        ]
+      },
+      "0c4b1d3e-2f5a-4b6c-8d7e-9f0a1b2c3d4e": {
+        "status": "active",
+        "keys": [
+          {
+            "key": "did:key:zDnaeRTJusfxSxjui2hPRT1LZgSMSxhFLJU9zskZZ2P43dBhL",
+            "state": "active"
+          }
+        ]
+      },
+      "5a5a5a5a-1111-4222-8333-444455556666": {
+        "status": "suspended",
+        "keys": [
+          {
+            "key": "did:key:zDnaeVsrkeEeNQaBFdcevZ3EnABi9pbL8s5JMaErSMnVa2LBr",
+            "state": "active"
+          }
+        ]
+      }
+    },
+    "lists": {},
+    "list_age_seconds": 0
+  },
+  "steps": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/v1/offers/search?near=-25.7766,28.3013&ring=2",
+        "body_sha256": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "host_key": "fascia_host_vector",
+        "presentation": "v1.eyJhdWQiOiJodHRwczovL29mZmVycy5mYXNjaWEuZXhhbXBsZSIsImJvZHlfc2hhMjU2IjoiNDdERVFwajhIQlNhLV9USW1XLTVKQ2V1UWVSa201Tk1wSldaRzNoU3VGVSIsImNsYWltc19zaGEyNTYiOiJHR1BVZHplRmoyTFFjdHhlUE4zenlYeVJmWHJwc2pmV281aDFIR01nZG1VIiwiaWF0IjoxNzkzNzc5MjAwLCJrZXkiOiJkaWQ6a2V5Ono2TWtxWG1ZUFFtZ1ZIUHB0Y2dveUVwV2JkSGNyd2JYbWdjVFkxaVV6NnhpZUZuTCIsIm1ldGhvZCI6IkdFVCIsIm5vbmNlIjoiVS01Sk5kZW14OEpCVjB3QVBrdWR1USIsInBhdGgiOiIvdjEvb2ZmZXJzL3NlYXJjaD9uZWFyPS0yNS43NzY2LDI4LjMwMTMmcmluZz0yIiwidiI6MX0.z9f-2lYEsblvV6WZ1DEGUMEsDzPadZC3Z3OYvOsFCA8tVLY-rgaRiE2VfN3IGBZKULaqdQL0LtkVqYY4ZH5mDA.gYFZAf-CWEBn_R9FhJEKZ28mZOaJwNp1Q1ccDh5LCw1OyAcDoTusBk6ExSw5xjyvOpcKD6N3J7GlU4XEnN0BlZpXOIcDK4oeomFoSDQB7AGAJBJxbnVjYW4vZGxnQDEuMC4wqWNhdWR4OGRpZDprZXk6ejZNa3FYbVlQUW1nVkhQcHRjZ295RXBXYmRIY3J3YlhtZ2NUWTFpVXo2eGllRm5MY2NtZG4vZmFzY2lhL21lbWJlcmNleHAaa1ReAGNpc3N4OWRpZDprZXk6ekRuYWVua0dOUVRxU1BZOWdiRWZva01tTWhHZXFlUUF3V2R6VlNhRUFXUTQyS1E0WWNuYmYaat23AGNwb2yAY3N1Yng5ZGlkOmtleTp6RG5hZW5rR05RVHFTUFk5Z2JFZm9rTW1NaEdlcWVRQXdXZHpWU2FFQVdRNDJLUTRZZG1ldGGhZmZhc2NpYaZhdgFkcmluZwFkcm9sZWZtZW1iZXJkdHlwZWptZW1iZXJzaGlwZmRjcF9pZHg4ZGNwOjdzbndzb3VnNHlqd2JkeTNqYWE2empuYjU3dm1oYWJteHQ0aGFtZmc2amFycHczNngzeHFsY29tbXVuaXR5X2lkeCQ2ZjFjMmE5ZS00YjdkLTRlOGEtOWMyMS03ZDRlNWY2YThiOTBlbm9uY2VM-QpVqPY6WEY6zkdu"
+      },
+      "expect": {
+        "ok": true,
+        "dcp_id": "dcp:7snwsoug4yjwbdy3jaa6zjnb57vmhabmxt4hamfg6jarpw36x3xq",
+        "memberships": 1
+      }
+    }
+  ]
+}

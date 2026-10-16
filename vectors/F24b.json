@@ -1,0 +1,62 @@
+{
+  "id": "F24b",
+  "case": "A session link before a device link",
+  "now": 1793779200,
+  "started_at": 1793775600,
+  "audience": "https://offers.fascia.example",
+  "host_keys": "vectors:fascia_host_vector",
+  "registry": {
+    "communities": {
+      "6f1c2a9e-4b7d-4e8a-9c21-7d4e5f6a8b90": {
+        "status": "active",
+        "keys": [
+          {
+            "key": "did:key:zDnaenkGNQTqSPY9gbEfokMmMhGeqeQAwWdzVSaEAWQ42KQ4Y",
+            "state": "active"
+          },
+          {
+            "key": "did:key:zDnaeoUrXMkCDpsCwd3pHrYCpxWrdKfJWMNNQZgCTRExzzLsh",
+            "state": "retiring",
+            "retire_after": 1796371200
+          }
+        ]
+      },
+      "0c4b1d3e-2f5a-4b6c-8d7e-9f0a1b2c3d4e": {
+        "status": "active",
+        "keys": [
+          {
+            "key": "did:key:zDnaeRTJusfxSxjui2hPRT1LZgSMSxhFLJU9zskZZ2P43dBhL",
+            "state": "active"
+          }
+        ]
+      },
+      "5a5a5a5a-1111-4222-8333-444455556666": {
+        "status": "suspended",
+        "keys": [
+          {
+            "key": "did:key:zDnaeVsrkeEeNQaBFdcevZ3EnABi9pbL8s5JMaErSMnVa2LBr",
+            "state": "active"
+          }
+        ]
+      }
+    },
+    "lists": {},
+    "list_age_seconds": 0
+  },
+  "steps": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/v1/offers/search?near=-25.7766,28.3013&ring=2",
+        "body_sha256": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "host_key": "fascia_host_vector",
+        "presentation": "v1.eyJhdWQiOiJodHRwczovL29mZmVycy5mYXNjaWEuZXhhbXBsZSIsImJvZHlfc2hhMjU2IjoiNDdERVFwajhIQlNhLV9USW1XLTVKQ2V1UWVSa201Tk1wSldaRzNoU3VGVSIsImNsYWltc19zaGEyNTYiOiJKN2lHcHdTRkszeUR3MEt1X1JOX3huS3lWQW1IRjdRUnVFNE5velFDRXRnIiwiaWF0IjoxNzkzNzc5MjAwLCJrZXkiOiJkaWQ6a2V5OnpEbmFlbmd6YW5YQUw2QkJOZjdKelh1S1dRWTg5TkthZzQ1OVdIakpxdXZpeHNYeG0iLCJtZXRob2QiOiJHRVQiLCJub25jZSI6IlUtNUpOZGVteDhKQlYwd0FQa3VkdVEiLCJwYXRoIjoiL3YxL29mZmVycy9zZWFyY2g_bmVhcj0tMjUuNzc2NiwyOC4zMDEzJnJpbmc9MiIsInYiOjF9.ocKFrgdcrUdA28pKqMcqe6NpbtbwBHtMJ8Lp7CEasXVEFedpA00Lms8g5KMtTYw6ATJCto6AEvsg3-_AnJVDUg.gYNZAgCCWEAFp2iPSB3QItlJDjNlxTjdLm90dUHRngO1cSOtA8_XEl_SglNwNBdUECikWFR4MeE1zyhOVOysn6DRpr9-cx-ZomFoSDQB7AGAJBJxbnVjYW4vZGxnQDEuMC4wqWNhdWR4OWRpZDprZXk6ekRuYWVtZnc2WW95ZFVhZkUxdXpTaVZMQTJOako1ZkpQQ3RwbVlON3FZVG5DNUFXN2NjbWRuL2Zhc2NpYS9tZW1iZXJjZXhwGmtUXgBjaXNzeDlkaWQ6a2V5OnpEbmFlbmtHTlFUcVNQWTlnYkVmb2tNbU1oR2VxZVFBd1dkelZTYUVBV1E0MktRNFljbmJmGmrdtwBjcG9sgGNzdWJ4OWRpZDprZXk6ekRuYWVua0dOUVRxU1BZOWdiRWZva01tTWhHZXFlUUF3V2R6VlNhRUFXUTQyS1E0WWRtZXRhoWZmYXNjaWGmYXYBZHJpbmcCZHJvbGVmbWVtYmVyZHR5cGVqbWVtYmVyc2hpcGZkY3BfaWR4OGRjcDpnYnVoY3NzY2NlZ29ibG8zeW5zdHpsdXRsbm93NXNxZm1odG9peDR3bWc1dW9sZXhoM3dhbGNvbW11bml0eV9pZHgkNmYxYzJhOWUtNGI3ZC00ZThhLTljMjEtN2Q0ZTVmNmE4YjkwZW5vbmNlTJpzc6C3Xb8-oW3l5FkB-4JYQPXP68pWD0YBHBI6dq6KEXbgafgpjlT_7p8vYfcF9FzYAZH4nMOrDl-YQiWbuAPVoJT_Z2YL9qpgvqrheRt2pI-iYWhINAHsAYAkEnFudWNhbi9kbGdAMS4wLjCpY2F1ZHg5ZGlkOmtleTp6RG5hZVMyalNyenNrcU1TSFd2U3lveWp1NXpzWGdvdnNZdmJkOXNKVlQ1Rkx1M21SY2NtZG4vZmFzY2lhL21lbWJlcmNleHAaauuAsGNpc3N4OWRpZDprZXk6ekRuYWVtZnc2WW95ZFVhZkUxdXpTaVZMQTJOako1ZkpQQ3RwbVlON3FZVG5DNUFXN2NuYmYaaurX8GNwb2yAY3N1Yng5ZGlkOmtleTp6RG5hZW5rR05RVHFTUFk5Z2JFZm9rTW1NaEdlcWVRQXdXZHpWU2FFQVdRNDJLUTRZZG1ldGGhZmZhc2NpYaVhdgFkdHlwZWdzZXNzaW9uZmRjcF9pZHg4ZGNwOmdidWhjc3NjY2Vnb2JsbzN5bnN0emx1dGxub3c1c3FmbWh0b2l4NHdtZzV1b2xleGgzd2FnaG9zdF9pZGd2ZWN0b3JzbGNvbW11bml0eV9pZHgkNmYxYzJhOWUtNGI3ZC00ZThhLTljMjEtN2Q0ZTVmNmE4YjkwZW5vbmNlTJxZmsoHPhOl9XaLgFkB6oJYQFF9mIGSdZYPjbxUxbPrasFpqVyIiZmywBV33hz72wijXLSRf6uMrvO5PRLzNnTVzkN7sYDinmN614cxlujz-biiYWhINAHsAYAkEnFudWNhbi9kbGdAMS4wLjCpY2F1ZHg5ZGlkOmtleTp6RG5hZW5nemFuWEFMNkJCTmY3SnpYdUtXUVk4OU5LYWc0NTlXSGpKcXV2aXhzWHhtY2NtZG4vZmFzY2lhL21lbWJlcmNleHAaa1ReAGNpc3N4OWRpZDprZXk6ekRuYWVTMmpTcnpza3FNU0hXdlN5b3lqdTV6c1hnb3ZzWXZiZDlzSlZUNUZMdTNtUmNuYmYaat23AGNwb2yAY3N1Yng5ZGlkOmtleTp6RG5hZW5rR05RVHFTUFk5Z2JFZm9rTW1NaEdlcWVRQXdXZHpWU2FFQVdRNDJLUTRZZG1ldGGhZmZhc2NpYaRhdgFkdHlwZWZkZXZpY2VmZGNwX2lkeDhkY3A6Z2J1aGNzc2NjZWdvYmxvM3luc3R6bHV0bG5vdzVzcWZtaHRvaXg0d21nNXVvbGV4aDN3YWxjb21tdW5pdHlfaWR4JDZmMWMyYTllLTRiN2QtNGU4YS05YzIxLTdkNGU1ZjZhOGI5MGVub25jZUzdds1egWW0bsJIVhM"
+      },
+      "expect": {
+        "ok": false,
+        "code": "claim_invalid",
+        "rule": "type_order"
+      }
+    }
+  ]
+}

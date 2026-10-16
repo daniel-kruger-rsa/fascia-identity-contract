@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.fascia.network/schemas/sealed-envelope.json",
+  "title": "Fascia sealed envelope",
+  "description": "ECDH P-256 (epk with the recipient's box key, x coordinate), HKDF-SHA-256 with info fascia-envelope-v1 to 32 bytes, AES-256-GCM with the canonical { to, exp } as additional data. The plaintext is canonical JSON { kind, from (sender key card), body, sig (sender device over canonical { kind, to, body }) }.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "to", "epk", "iv", "ct", "exp"],
+  "properties": {
+    "v": { "const": 1 },
+    "to": { "type": "string", "pattern": "^did:key:z" },
+    "epk": { "type": "string", "pattern": "^[A-Za-z0-9_-]{44}$" },
+    "iv": { "type": "string", "pattern": "^[A-Za-z0-9_-]{16}$" },
+    "ct": { "type": "string" },
+    "exp": { "type": "integer", "description": "At most 14 days after sealing." }
+  }
+}

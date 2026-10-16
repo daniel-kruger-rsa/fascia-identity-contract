@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.fascia.network/schemas/revocation-list.json",
+  "title": "Fascia revocation list",
+  "description": "One per community. sig is the signer's signature over the canonical JSON of the object without sig. Grows only: every entry whose until is in the future stays until it passes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "community_id", "seq", "issued_at", "entries", "signer", "proof", "sig"],
+  "properties": {
+    "v": { "const": 1 },
+    "community_id": { "type": "string", "format": "uuid" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "issued_at": { "type": "integer" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "id", "until"],
+        "properties": {
+          "kind": { "enum": ["claim", "key"], "description": "claim: fails any chain containing a link with this claim_id. key: fails any chain in which this key is an iss or an aud." },
+          "id": { "type": "string" },
+          "until": { "type": "integer" }
+        }
+      }
+    },
+    "signer": { "type": "string", "pattern": "^did:key:z" },
+    "proof": { "type": "array", "maxItems": 1, "items": { "type": "string" }, "description": "Empty when the Community Agent signs; the steward's issuer delegation (base64url) when a steward does." },
+    "sig": { "type": "string" }
+  }
+}

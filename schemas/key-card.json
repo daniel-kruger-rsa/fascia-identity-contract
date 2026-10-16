@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.fascia.network/schemas/key-card.json",
+  "title": "Fascia key card",
+  "description": "What one device shows another, as a QR code or link. sig is by device over the canonical card without sig.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "device", "box", "sig"],
+  "properties": {
+    "v": { "const": 1 },
+    "device": { "type": "string", "pattern": "^did:key:z" },
+    "box": { "type": "string", "pattern": "^[A-Za-z0-9_-]{44}$", "description": "Compressed P-256 public key (33 bytes) used only to open sealed envelopes." },
+    "dcp_id": { "type": "string", "pattern": "^dcp:[a-z2-7]{52}$" },
+    "sig": { "type": "string" }
+  }
+}

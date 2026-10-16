@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.fascia.network/schemas/claim-meta.json",
+  "title": "meta.fascia of a Fascia claim",
+  "description": "Every Fascia claim is a UCAN 1.0 delegation (ucan/dlg@1.0.0) with pol [], nbf set, and this object at meta.fascia. Commands: /fascia/member (issuer, membership, device, session), /fascia/member/refer (referral), /fascia/member/standing (standing), /fascia/locality (locality). The ten profile rules a verifier enforces are in the specification.",
+  "type": "object",
+  "required": ["v", "type", "dcp_id"],
+  "properties": {
+    "v": { "const": 1 },
+    "type": { "enum": ["issuer", "membership", "device", "session", "referral", "standing", "locality"] },
+    "community_id": { "type": "string", "format": "uuid" },
+    "dcp_id": { "type": "string", "pattern": "^dcp:[a-z2-7]{52}$" },
+    "role": { "enum": ["member", "steward", "agent"] },
+    "ring": { "enum": [1, 2, 3] },
+    "may_issue": { "type": "array", "items": { "enum": ["membership", "standing"] } },
+    "host_id": { "type": "string" },
+    "standing": { "type": "string" },
+    "area_id": { "type": "string" },
+    "generation": { "type": "string" }
+  },
+  "allOf": [
+    { "if": { "properties": { "type": { "const": "issuer" } } }, "then": { "required": ["community_id", "role", "may_issue"] } },
+    { "if": { "properties": { "type": { "const": "membership" } } }, "then": { "required": ["community_id", "role", "ring"] } },
+    { "if": { "properties": { "type": { "const": "session" } } }, "then": { "required": ["community_id", "host_id"] } },
+    { "if": { "properties": { "type": { "enum": ["device", "referral"] } } }, "then": { "required": ["community_id"] } },
+    { "if": { "properties": { "type": { "const": "standing" } } }, "then": { "required": ["community_id", "standing"] } },
+    { "if": { "properties": { "type": { "const": "locality" } } }, "then": { "required": ["area_id", "generation"], "not": { "required": ["community_id"] } } }
+  ]
+}

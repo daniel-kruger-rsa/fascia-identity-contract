@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.fascia.network/schemas/inception-record.json",
+  "title": "Fascia inception record",
+  "description": "dcp_id is 'dcp:' followed by the base32 (lower case, no padding) SHA-256 of this record's canonical JSON. The inception proof is { record, sig } with sig by first_key over the same bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "created_at", "first_key", "nonce"],
+  "properties": {
+    "v": { "const": 1 },
+    "created_at": { "type": "integer" },
+    "first_key": { "type": "string", "pattern": "^did:key:z" },
+    "nonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{22}$" }
+  }
+}

@@ -1,0 +1,441 @@
+openapi: 3.0.3
+info:
+  title: Fascia Identity
+  version: 0.1.0
+  description: |
+    Community keys and revocation lists for verifiers, a verify endpoint for hosts, audit
+    entries from rail services, and the Community Register module's Phase 1 slice.
+
+    The service issues nothing and stores no member's key or claim. Claims pass phone to phone;
+    the spine first sees one when a member presents it.
+
+    **Errors** are `{ "error": { "code", "message" } }`, with further fields beside `code` where
+    an operation names them. Switch on `error.code`, never on the status alone. An unknown path
+    is `404 not_found`, with or without a key.
+
+    **The presentation** a member's device attaches to a request to any Fascia service is the
+    `Fascia-Presentation` header: `v1.<canonical JSON>.<signature>.<claims>`, each part base64url.
+    Its format and the nine checks run on it are in `schemas/presentation.json` and the test
+    vectors in `vectors/`.
+  license:
+    name: MIT
+servers:
+  - url: https://identity.fascia.network
+    description: Production
+tags:
+  - name: Discovery
+  - name: Verifiers
+  - name: Hosts
+  - name: Rail services
+  - name: Community Register
+
+components:
+  securitySchemes:
+    hostKey:
+      type: http
+      scheme: bearer
+      description: A host's server-to-server key. Never in an app bundle.
+    serviceKey:
+      type: http
+      scheme: bearer
+      description: A Fascia rail service's key, for audit entries only.
+    operatorKey:
+      type: http
+      scheme: bearer
+      description: The NPC operator's key, for creating communities and setting their status.
+
+  parameters:
+    communityId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            rule:
+              type: string
+              description: On `claim_invalid`, the profile rule that failed.
+            server_time:
+              type: integer
+              description: On `presentation_stale`, the server's Unix time, so the device can correct its clock.
+    Discovery:
+      type: object
+      required: [aud, schema_versions, curves, claim_envelope, freshness_seconds, skew_seconds, max_presentation_bytes, max_chains, list_refresh_seconds, list_max_age_seconds]
+      properties:
+        aud: { type: string, description: This service's audience. A presentation's `aud` must equal it. }
+        schema_versions: { type: array, items: { type: integer } }
+        curves: { type: array, items: { type: string, enum: [Ed25519, P-256] } }
+        claim_envelope: { type: string, example: ucan/dlg@1.0.0 }
+        freshness_seconds: { type: integer, example: 60 }
+        skew_seconds: { type: integer, example: 120 }
+        max_presentation_bytes: { type: integer, example: 8192 }
+        max_chains: { type: integer, example: 4 }
+        list_refresh_seconds: { type: integer, example: 300 }
+        list_max_age_seconds: { type: integer, example: 86400 }
+    CommunityKeys:
+      type: object
+      required: [community_id, status, keys, updated_at]
+      properties:
+        community_id: { type: string, format: uuid }
+        status: { type: string, enum: [active, suspended] }
+        keys:
+          type: array
+          description: The keys that may root a chain. Retired keys are left out.
+          items:
+            type: object
+            required: [key, state, since]
+            properties:
+              key: { type: string, description: "A did:key" }
+              state: { type: string, enum: [active, retiring] }
+              since: { type: integer }
+              retire_after:
+                type: integer
+                description: A retiring key roots chains until this time.
+              handover:
+                type: object
+                description: The signed handover from the previous key.
+                properties:
+                  from: { type: string }
+                  at: { type: integer }
+                  sig: { type: string }
+        updated_at: { type: integer }
+    RevocationList:
+      description: See `schemas/revocation-list.json`. An untouched community answers `seq` 0, no entries and no signature.
+      type: object
+      required: [v, community_id, seq, issued_at, entries]
+      properties:
+        v: { type: integer, enum: [1] }
+        community_id: { type: string, format: uuid }
+        seq: { type: integer, minimum: 0 }
+        issued_at: { type: integer }
+        entries:
+          type: array
+          items:
+            type: object
+            required: [kind, id, until]
+            properties:
+              kind: { type: string, enum: [claim, key] }
+              id: { type: string }
+              until: { type: integer }
+        signer: { type: string }
+        proof: { type: array, items: { type: string } }
+        sig: { type: string }
+    VerifyRequest:
+      type: object
+      required: [presentation, method, path, body_sha256, aud]
+      properties:
+        presentation: { type: string, description: The Fascia-Presentation header value the host received. }
+        method: { type: string }
+        path: { type: string, description: "The request target the host received, with its query." }
+        body_sha256: { type: string, description: base64url SHA-256 of the raw body the host received. }
+        aud: { type: string, description: This host's registered audience. }
+    VerifyResult:
+      oneOf:
+        - type: object
+          required: [ok, dcp_id, key, memberships, standing, locality]
+          properties:
+            ok: { type: boolean, enum: [true] }
+            dcp_id: { type: string, nullable: true }
+            key: { type: string }
+            memberships:
+              type: array
+              items:
+                type: object
+                required: [community_id, role, ring, claim_ids, expires_at, via]
+                properties:
+                  community_id: { type: string, format: uuid }
+                  role: { type: string, enum: [member, steward, agent] }
+                  ring: { type: integer, enum: [1, 2, 3] }
+                  claim_ids: { type: array, items: { type: string } }
+                  expires_at: { type: integer }
+                  via: { type: array, items: { type: string, enum: [issuer, membership, device, session] } }
+            standing:
+              type: array
+              items:
+                type: object
+                properties:
+                  community_id: { type: string, format: uuid }
+                  standing: { type: string }
+                  expires_at: { type: integer }
+            locality:
+              type: object
+              nullable: true
+              properties:
+                area_id: { type: string }
+                generation: { type: string }
+        - type: object
+          required: [ok, error]
+          properties:
+            ok: { type: boolean, enum: [false] }
+            error:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  enum: [presentation_missing, presentation_malformed, presentation_too_large, audience_mismatch, presentation_stale, presentation_replayed, request_mismatch, signature_invalid, claim_invalid, claim_revoked, identity_unavailable]
+                rule: { type: string }
+                server_time: { type: integer }
+    AuditEntry:
+      type: object
+      required: [at, host_id, verb, decision]
+      properties:
+        at: { type: integer }
+        host_id: { type: string }
+        verb: { type: string, example: GET /v1/offers/search }
+        decision: { type: string, description: "`allow` or an error code." }
+        community_ids: { type: array, items: { type: string, format: uuid } }
+        claim_ids: { type: array, items: { type: string } }
+        dcp_id:
+          type: string
+          description: Replaced by a 30-day pseudonym before it is stored. Never stored as sent.
+
+  responses:
+    Error:
+      description: An error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+paths:
+  /health:
+    get:
+      operationId: health
+      security: []
+      tags: [Discovery]
+      summary: Liveness
+      responses:
+        "200":
+          description: Up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok] }
+                  build: { type: string }
+
+  /.well-known/fascia-identity:
+    get:
+      operationId: discovery
+      security: []
+      tags: [Discovery]
+      summary: Audience, curves, envelope and limits
+      description: Every Fascia rail service serves the same document at the same path with its own `aud`.
+      responses:
+        "200":
+          description: Discovery document.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Discovery" }
+
+  /v1/identity/communities/{id}/keys:
+    get:
+      operationId: getKeys
+      security: []
+      tags: [Verifiers]
+      summary: A community's status and the keys that may root its chains
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      responses:
+        "200":
+          description: Status and keys. Carries an ETag and `Cache-Control max-age=300`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunityKeys" }
+        "304": { description: Unchanged since the ETag sent in If-None-Match. }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/identity/communities/{id}/revocations:
+    get:
+      operationId: getRevocations
+      security: []
+      tags: [Verifiers]
+      summary: The community's signed revocation list
+      description: Carries an ETag and `Cache-Control no-cache`; verifiers revalidate every 300 seconds.
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      responses:
+        "200":
+          description: The list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RevocationList" }
+        "304": { description: Unchanged. }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      operationId: putRevocations
+      tags: [Hosts]
+      summary: Replace the list
+      description: |
+        The host key only says which host relayed it. The list is accepted on its own signature:
+        by the Community Agent with an empty `proof`, or by a steward with its issuer delegation as
+        `proof`, and never by a key the stored list revokes. Every stored entry still live must be
+        present, and `seq` must grow.
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RevocationList" }
+      responses:
+        "200":
+          description: Stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seq: { type: integer }
+        "400": { description: "`revocation_malformed`: shape or signature.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { description: "`host_key_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "403": { description: "`revocation_signer_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "404": { description: "`community_unknown`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409": { description: "`revocation_seq_stale`. Fetch, merge, sign again.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: "`revocation_not_superset`: a live entry was dropped.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/identity/verify:
+    post:
+      operationId: verify
+      tags: [Hosts]
+      summary: Run the nine checks on a presentation the host received
+      description: |
+        For hosts that cannot embed the verify library. `aud` must be the calling host's
+        registered audience, so a host cannot check, or consume the nonce of, a presentation
+        meant for a Fascia service. The answer is `200` whenever the call itself was well formed;
+        the verdict is in `ok`.
+      security: [{ hostKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyRequest" }
+      responses:
+        "200":
+          description: The verdict.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerifyResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { description: "`audience_not_registered`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/identity/audit:
+    post:
+      operationId: audit
+      tags: [Rail services]
+      summary: Send audit entries, in batches
+      security: [{ serviceKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entries]
+              properties:
+                entries:
+                  type: array
+                  maxItems: 1000
+                  items: { $ref: "#/components/schemas/AuditEntry" }
+      responses:
+        "200":
+          description: Stored. Entries older than the 90-day retention are dropped, not stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stored: { type: integer }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /v1/register/communities:
+    post:
+      operationId: createCommunity
+      tags: [Community Register]
+      summary: Create a community with its first key
+      description: Who may ask for a community, and on what evidence, is open. Until it is settled the operator key is the whole control.
+      security: [{ operatorKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, first_key, proof]
+              properties:
+                name: { type: string, maxLength: 200 }
+                first_key: { type: string, description: "The Community Agent's did:key." }
+                proof: { type: string, description: "base64url signature by first_key over the canonical { name, first_key }." }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  community_id: { type: string, format: uuid }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "422": { description: "`proof_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/register/communities/{id}/status:
+    post:
+      operationId: setStatus
+      tags: [Community Register]
+      summary: Set active or suspended
+      security: [{ operatorKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [active, suspended] }
+      responses:
+        "200": { description: Set. }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/register/communities/{id}/keys/handover:
+    post:
+      operationId: handover
+      tags: [Community Register]
+      summary: Rotate the Community Agent's key
+      description: |
+        Signed by the current active key. The old key becomes `retiring` for 180 days, so the
+        claims it signed stay valid until they expire. A lost key cannot use this route.
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from, to, at, sig]
+              properties:
+                from: { type: string }
+                to: { type: string }
+                at: { type: integer, description: Within ten minutes of the server's time. }
+                sig: { type: string, description: "base64url signature by from over the canonical { from, to, at }." }
+      responses:
+        "200": { description: Rotated. }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { description: "`handover_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.fascia.network/schemas/presentation.json",
+  "title": "Fascia presentation, signed part",
+  "description": "The second part of the Fascia-Presentation header: v1.<this object, canonical JSON (RFC 8785), base64url>.<device signature over those bytes, base64url>.<claims: DAG-CBOR array of chains, each an array of UCAN delegation bytes root first, base64url>. The whole header is at most 8,192 bytes and carries at most 4 chains.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "aud", "method", "path", "body_sha256", "iat", "nonce", "key", "claims_sha256"],
+  "properties": {
+    "v": { "const": 1 },
+    "aud": { "type": "string", "description": "The service's audience from its /.well-known/fascia-identity." },
+    "method": { "type": "string", "pattern": "^[A-Z]+$" },
+    "path": { "type": "string", "description": "Request target with query, byte for byte as the service receives it." },
+    "body_sha256": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "iat": { "type": "integer", "description": "Unix seconds, corrected by the device's stored clock offset." },
+    "nonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{22}$", "description": "16 random bytes." },
+    "key": { "type": "string", "pattern": "^did:key:z" },
+    "claims_sha256": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$", "description": "SHA-256 of the claims part's bytes. Binds the claims to the signature." }
+  }
+}
