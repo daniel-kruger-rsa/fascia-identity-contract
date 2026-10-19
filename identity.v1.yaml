@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Fascia Identity
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Community keys and revocation lists for verifiers, a verify endpoint for hosts, audit
     entries from rail services, and the Community Register module's Phase 1 slice.
@@ -10,8 +10,9 @@ info:
     Community Agents sign the link and either ends it. A member holds one card, from their own
     community; `/verify` answers the levels it counts `within`, worked out from the register.
 
-    **Credentials.** A community issues credential cards of any type: a Reputation Rating, a
-    vetted-volunteer card, a first-aid certificate. Each card names its type (`schema`, as
+    **Credentials.** Beside membership cards, a community issues credentials of any type, in
+    three families: badges (Open Badges 3.0), ratings, and ID credentials (EU PID, ISO mobile
+    documents). Each credential names its type (`schema`, as
     name/version) and pins the schema document the issuer published in the register
     (`schema_hash`). `/verify` answers what each credential says and who issued it; whether to
     accept it, and what it is worth, is the receiving service's own policy.
@@ -186,7 +187,7 @@ components:
                     items: { type: string, format: uuid }
             credentials:
               type: array
-              description: The credential cards presented, after the nine checks. Added in 0.3.0.
+              description: The credentials presented, after the nine checks. Added in 0.3.0.
               items:
                 type: object
                 required: [community_id, schema, schema_hash, policy_hash, claims, claim_ids, expires_at, within]
@@ -575,9 +576,11 @@ paths:
       summary: Publish a credential schema, a policy profile or a trust list
       description: |
         A document is addressed by the SHA-256 of its canonical JSON (`sha256-` + base64url), so a
-        credential card pins the exact version it was issued under, and a published document never
+        credential pins the exact version it was issued under, and a published document never
         changes. `document.kind` repeats `kind`. A credential schema or policy profile names the
-        credential type it belongs to in `document.schema` (name/version). A trust list names itself in
+        credential type it belongs to in `document.schema` (name/version). A credential schema may
+        also say its `family` (badge, rating or identity) and the `w3c_type` its credentials would
+        carry if exported, ending in `Credential`. A trust list names itself in
         `document.list` (name/version) and vouches for up to 500 `issuers`, each
         `{ community_id, schemas? }`; a verifier that subscribes to it trusts those issuers. Canonical JSON holds integers only: write weights in basis
         points. At most 16 KB. Signed by the community's active key over the canonical
@@ -628,6 +631,7 @@ paths:
                         hash: { type: string }
                         kind: { type: string, enum: [credential-schema, policy-profile, trust-list] }
                         schema: { type: string, description: "The credential schema the document belongs to, or a trust list's name." }
+                        family: { type: string, enum: [badge, rating, identity], description: "A credential schema's family, when it names one. Added in 0.4.0." }
                         published_at: { type: integer }
         "404": { $ref: "#/components/responses/Error" }
 

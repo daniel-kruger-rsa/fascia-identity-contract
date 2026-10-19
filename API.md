@@ -226,12 +226,15 @@ the communities above it, nearest first, stopping below a suspended one. The key
 `parent` and `listing_optins`. A listing opened at an ancestor reaches a member only if the
 member's community opted in to that ancestor; `listingReaches` in `@fascia/dcp-verify` decides it.
 
-**Credentials.** A community issues credential cards of any type. A card names its type in
+**Credentials.** Beside membership cards, a community issues credentials of any type, in three
+families: badges, following Open Badges 3.0; ratings; and ID credentials, lined up with the EU's
+person identification data and ISO mobile documents. A credential schema names its `family` and
+may name the `w3c_type` its credentials would carry if exported. A credential names its type in
 `schema` (`name/version`, such as `example.reputation-rating/1`) and pins the schema document the
 community published in the register with `schema_hash`; a computed credential also names the
 policy profile it was produced under in `policy_hash`. `claims` is what the card says: up to 32
 snake_case entries of strings, integers, booleans or short arrays, at most 2,048 bytes. A card
-lasts at most 365 days, cannot be passed to another device, and is revoked like any other. An
+lasts at most 365 days, cannot be passed to another device, and is revoked like any card. An
 issuer link may carry `may_issue_schemas` to appoint a steward for some types only.
 
 Documents are addressed by the SHA-256 of their canonical JSON and never change. `/verify` adds
