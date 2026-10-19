@@ -1,10 +1,20 @@
 openapi: 3.0.3
 info:
   title: Fascia Identity
-  version: 0.1.0
+  version: 0.3.0
   description: |
     Community keys and revocation lists for verifiers, a verify endpoint for hosts, audit
     entries from rail services, and the Community Register module's Phase 1 slice.
+
+    **Hierarchies.** A community may sit under one parent, at most five levels deep. Both
+    Community Agents sign the link and either ends it. A member holds one card, from their own
+    community; `/verify` answers the levels it counts `within`, worked out from the register.
+
+    **Credentials.** A community issues credential cards of any type: a Reputation Rating, a
+    vetted-volunteer card, a first-aid certificate. Each card names its type (`schema`, as
+    name/version) and pins the schema document the issuer published in the register
+    (`schema_hash`). `/verify` answers what each credential says and who issued it; whether to
+    accept it, and what it is worth, is the receiving service's own policy.
 
     The service issues nothing and stores no member's key or claim. Claims pass phone to phone;
     the spine first sees one when a member presents it.
@@ -108,6 +118,15 @@ components:
                   from: { type: string }
                   at: { type: integer }
                   sig: { type: string }
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+          description: The community this one sits under, or null. Added in 0.2.0.
+        listing_optins:
+          type: array
+          description: Ancestors whose listings this community receives. Only current ancestors are shown. Added in 0.2.0.
+          items: { type: string, format: uuid }
         updated_at: { type: integer }
     RevocationList:
       description: See `schemas/revocation-list.json`. An untouched community answers `seq` 0, no entries and no signature.
@@ -159,6 +178,27 @@ components:
                   claim_ids: { type: array, items: { type: string } }
                   expires_at: { type: integer }
                   via: { type: array, items: { type: string, enum: [issuer, membership, device, session] } }
+                  within:
+                    type: array
+                    description: |
+                      The communities above this one in the register, nearest first, that the
+                      membership counts within. Stops below a suspended ancestor. Added in 0.2.0.
+                    items: { type: string, format: uuid }
+            credentials:
+              type: array
+              description: The credential cards presented, after the nine checks. Added in 0.3.0.
+              items:
+                type: object
+                required: [community_id, schema, schema_hash, policy_hash, claims, claim_ids, expires_at, within]
+                properties:
+                  community_id: { type: string, format: uuid, description: The issuing community. }
+                  schema: { type: string, description: "The credential's type, name/version." }
+                  schema_hash: { type: string, description: The schema document the issuer published. }
+                  policy_hash: { type: string, nullable: true, description: The policy profile a computed credential was produced under. }
+                  claims: { type: object, additionalProperties: true, description: What the credential says. }
+                  claim_ids: { type: array, items: { type: string } }
+                  expires_at: { type: integer }
+                  within: { type: array, items: { type: string, format: uuid } }
             standing:
               type: array
               items:
@@ -439,3 +479,180 @@ paths:
         "401": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
         "422": { description: "`handover_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/register/communities/{id}/parent:
+    post:
+      operationId: linkParent
+      tags: [Community Register]
+      summary: Place a community under a parent
+      description: |
+        Both communities' active keys sign the canonical `{ child, parent, at }`, where child is
+        the community in the path. A new link replaces any parent the community had. Refused when
+        either community is suspended, when the parent sits below the child, or when the tree
+        would be more than five levels deep. A parent never admits members into a child.
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parent, at, child_sig, parent_sig]
+              properties:
+                parent: { type: string, format: uuid }
+                at: { type: integer, description: Within ten minutes of the server's time. }
+                child_sig: { type: string, description: "base64url signature by the child's active key." }
+                parent_sig: { type: string, description: "base64url signature by the parent's active key." }
+      responses:
+        "200": { description: Linked. }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { description: "`link_invalid` or `hierarchy_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/register/communities/{id}/parent/end:
+    post:
+      operationId: endParent
+      tags: [Community Register]
+      summary: End a community's link to its parent
+      description: "Either side ends the link alone. `key` is the active key of the child or the parent, signing the canonical `{ child, parent, at, end: true }`."
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parent, at, key, sig]
+              properties:
+                parent: { type: string, format: uuid }
+                at: { type: integer }
+                key: { type: string, description: "A did:key." }
+                sig: { type: string }
+      responses:
+        "200": { description: Ended. }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { description: "`link_unknown`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: "`link_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/register/communities/{id}/listing-optins:
+    put:
+      operationId: setListingOptins
+      tags: [Community Register]
+      summary: Choose which ancestors' listings the community receives
+      description: |
+        Replaces the set. Every id must be a current ancestor. Signed by the community's active
+        key over the canonical `{ community_id, ancestors, at }`. A listing opened at an ancestor
+        reaches a member only if the member's own community opted in to that ancestor.
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ancestors, at, sig]
+              properties:
+                ancestors: { type: array, maxItems: 5, items: { type: string, format: uuid } }
+                at: { type: integer }
+                sig: { type: string }
+      responses:
+        "200": { description: Set. }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { description: "`optin_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+
+  /v1/register/communities/{id}/documents:
+    put:
+      operationId: publishDocument
+      tags: [Community Register]
+      summary: Publish a credential schema, a policy profile or a trust list
+      description: |
+        A document is addressed by the SHA-256 of its canonical JSON (`sha256-` + base64url), so a
+        credential card pins the exact version it was issued under, and a published document never
+        changes. `document.kind` repeats `kind`. A credential schema or policy profile names the
+        credential type it belongs to in `document.schema` (name/version). A trust list names itself in
+        `document.list` (name/version) and vouches for up to 500 `issuers`, each
+        `{ community_id, schemas? }`; a verifier that subscribes to it trusts those issuers. Canonical JSON holds integers only: write weights in basis
+        points. At most 16 KB. Signed by the community's active key over the canonical
+        `{ community_id, kind, hash, at }`. Publishing the same document again answers 200.
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, document, at, sig]
+              properties:
+                kind: { type: string, enum: [credential-schema, policy-profile, trust-list] }
+                document: { type: object, additionalProperties: true }
+                at: { type: integer }
+                sig: { type: string }
+      responses:
+        "200": { description: Already published. }
+        "201": { description: Published. }
+        "400": { description: "`body_malformed` or `document_malformed`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { description: "`document_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/identity/communities/{id}/documents:
+    get:
+      operationId: listDocuments
+      tags: [Verifiers]
+      summary: The documents a community has published
+      security: []
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      responses:
+        "200":
+          description: Hash, kind, schema and time of each document.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  community_id: { type: string, format: uuid }
+                  documents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hash: { type: string }
+                        kind: { type: string, enum: [credential-schema, policy-profile, trust-list] }
+                        schema: { type: string, description: "The credential schema the document belongs to, or a trust list's name." }
+                        published_at: { type: integer }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/identity/communities/{id}/documents/{hash}:
+    get:
+      operationId: getDocument
+      tags: [Verifiers]
+      summary: One published document, by its hash
+      description: Immutable, so it may be cached indefinitely. Its `document` hashes to `hash`.
+      security: []
+      parameters:
+        - { $ref: "#/components/parameters/communityId" }
+        - { name: hash, in: path, required: true, schema: { type: string, pattern: "^sha256-[A-Za-z0-9_-]{43}$" } }
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  community_id: { type: string, format: uuid }
+                  hash: { type: string }
+                  kind: { type: string, enum: [credential-schema, policy-profile, trust-list] }
+                  schema: { type: string }
+                  document: { type: object, additionalProperties: true }
+                  published_at: { type: integer }
+        "404": { description: "`document_unknown`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }

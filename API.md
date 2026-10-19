@@ -204,11 +204,44 @@ end, and deletes the row after 90 days.
 POST /v1/register/communities                       (operator key)
 POST /v1/register/communities/{id}/status           (operator key)
 POST /v1/register/communities/{id}/keys/handover    (host key)
+POST /v1/register/communities/{id}/parent           (host key)
+POST /v1/register/communities/{id}/parent/end       (host key)
+PUT  /v1/register/communities/{id}/listing-optins   (host key)
+PUT  /v1/register/communities/{id}/documents        (host key)
+GET  /v1/identity/communities/{id}/documents        (public)
+GET  /v1/identity/communities/{id}/documents/{hash} (public)
 ```
 
 A community is created with its agent's first key and that key's signature over
 `{ name, first_key }`. A handover `{ from, to, at, sig }` is signed by the current active key; the
 old key becomes `retiring` for 180 days.
+
+**Hierarchies.** A community may sit under one parent: a federation, its regions and their local
+chapters, for example. Both Community Agents sign `{ child, parent, at }`;
+either side ends the link by signing `{ child, parent, at, end: true }`. A tree is at most five
+levels deep and has no loops. A parent never admits members into a child.
+
+A member holds one card, from their own community. `/verify` adds `within` to each membership:
+the communities above it, nearest first, stopping below a suspended one. The keys response carries
+`parent` and `listing_optins`. A listing opened at an ancestor reaches a member only if the
+member's community opted in to that ancestor; `listingReaches` in `@fascia/dcp-verify` decides it.
+
+**Credentials.** A community issues credential cards of any type. A card names its type in
+`schema` (`name/version`, such as `example.reputation-rating/1`) and pins the schema document the
+community published in the register with `schema_hash`; a computed credential also names the
+policy profile it was produced under in `policy_hash`. `claims` is what the card says: up to 32
+snake_case entries of strings, integers, booleans or short arrays, at most 2,048 bytes. A card
+lasts at most 365 days, cannot be passed to another device, and is revoked like any other. An
+issuer link may carry `may_issue_schemas` to appoint a steward for some types only.
+
+Documents are addressed by the SHA-256 of their canonical JSON and never change. `/verify` adds
+`credentials`: issuer, type, claims and the levels above the issuer. Whether to accept one, and
+what it grants, is the receiving service's policy. There is no network-wide default trust:
+`acceptCredential` in `@fascia/dcp-verify` trusts the service's own hierarchy (`home`: every
+community sharing an ancestor with it), issuers it names, and issuers on the signed `trust-list`
+documents it subscribes to; it also applies pinned schemas or policies, a maximum age, a minimum
+`assurance` for identity cards (`in_person` < `document_chip` < `government_record`) and a grant
+mapping.
 
 ## Errors
 
@@ -231,6 +264,10 @@ old key becomes `retiring` for 180 days.
 | `ring_denied` | 403 | Valid, but the member's rings do not reach this record (rail services) |
 | `audience_not_registered` | 403 | Verify named an audience that is not the host's |
 | `revocation_malformed`, `revocation_signer_invalid`, `revocation_seq_stale`, `revocation_not_superset` | 400, 403, 409, 422 | A revocation list was refused; see the contract |
+| `link_invalid`, `hierarchy_invalid`, `optin_invalid` | 422 | A parent link or opt-in was refused: a signature or time is wrong, the tree would loop or exceed five levels, or an id is not an ancestor |
+| `link_unknown` | 404 | The community is not linked to that parent |
+| `document_malformed`, `document_invalid` | 400, 422 | A document was refused: wrong shape, a fraction, over 16 KB, or not signed by the community's active key |
+| `document_unknown` | 404 | No such document |
 | `community_unknown` | 404 | No such community |
 | `not_found` | 404 | No such path, with or without a key |
 

@@ -2,28 +2,221 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://identity.fascia.network/schemas/claim-meta.json",
   "title": "meta.fascia of a Fascia claim",
-  "description": "Every Fascia claim is a UCAN 1.0 delegation (ucan/dlg@1.0.0) with pol [], nbf set, and this object at meta.fascia. Commands: /fascia/member (issuer, membership, device, session), /fascia/member/refer (referral), /fascia/member/standing (standing), /fascia/locality (locality). The ten profile rules a verifier enforces are in the specification.",
+  "description": "Every Fascia claim is a UCAN 1.0 delegation (ucan/dlg@1.0.0) with pol [], nbf set, and this object at meta.fascia. Commands: /fascia/member (issuer, membership, device, session), /fascia/member/refer (referral), /fascia/member/standing (standing), /fascia/member/credential (credential), /fascia/locality (locality). The ten profile rules a verifier enforces are in the specification.",
   "type": "object",
-  "required": ["v", "type", "dcp_id"],
+  "required": [
+    "v",
+    "type",
+    "dcp_id"
+  ],
   "properties": {
-    "v": { "const": 1 },
-    "type": { "enum": ["issuer", "membership", "device", "session", "referral", "standing", "locality"] },
-    "community_id": { "type": "string", "format": "uuid" },
-    "dcp_id": { "type": "string", "pattern": "^dcp:[a-z2-7]{52}$" },
-    "role": { "enum": ["member", "steward", "agent"] },
-    "ring": { "enum": [1, 2, 3] },
-    "may_issue": { "type": "array", "items": { "enum": ["membership", "standing"] } },
-    "host_id": { "type": "string" },
-    "standing": { "type": "string" },
-    "area_id": { "type": "string" },
-    "generation": { "type": "string" }
+    "v": {
+      "const": 1
+    },
+    "type": {
+      "enum": [
+        "issuer",
+        "membership",
+        "device",
+        "session",
+        "referral",
+        "standing",
+        "credential",
+        "locality"
+      ]
+    },
+    "community_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dcp_id": {
+      "type": "string",
+      "pattern": "^dcp:[a-z2-7]{52}$"
+    },
+    "role": {
+      "enum": [
+        "member",
+        "steward",
+        "agent"
+      ]
+    },
+    "ring": {
+      "enum": [
+        1,
+        2,
+        3
+      ]
+    },
+    "may_issue": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "membership",
+          "standing",
+          "credential"
+        ]
+      }
+    },
+    "host_id": {
+      "type": "string"
+    },
+    "standing": {
+      "type": "string"
+    },
+    "area_id": {
+      "type": "string"
+    },
+    "generation": {
+      "type": "string"
+    },
+    "may_issue_schemas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "On an issuer link: the credential schemas this steward may issue. Absent means any. Added in 0.3.0."
+    },
+    "schema": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{0,62}/[1-9][0-9]{0,3}$",
+      "description": "A credential's type, name/version. Added in 0.3.0."
+    },
+    "schema_hash": {
+      "type": "string",
+      "pattern": "^sha256-[A-Za-z0-9_-]{43}$",
+      "description": "The schema document the issuer published in the Community Register."
+    },
+    "policy_hash": {
+      "type": "string",
+      "pattern": "^sha256-[A-Za-z0-9_-]{43}$",
+      "description": "Optional: the published policy profile a computed credential, such as a Reputation Rating, was produced under."
+    },
+    "claims": {
+      "type": "object",
+      "description": "What the credential says. 1 to 32 entries; names are snake_case; values are strings up to 500 characters, integers, booleans, or arrays of up to 20 of these. At most 2,048 bytes of canonical JSON.",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,39}$"
+      }
+    }
   },
   "allOf": [
-    { "if": { "properties": { "type": { "const": "issuer" } } }, "then": { "required": ["community_id", "role", "may_issue"] } },
-    { "if": { "properties": { "type": { "const": "membership" } } }, "then": { "required": ["community_id", "role", "ring"] } },
-    { "if": { "properties": { "type": { "const": "session" } } }, "then": { "required": ["community_id", "host_id"] } },
-    { "if": { "properties": { "type": { "enum": ["device", "referral"] } } }, "then": { "required": ["community_id"] } },
-    { "if": { "properties": { "type": { "const": "standing" } } }, "then": { "required": ["community_id", "standing"] } },
-    { "if": { "properties": { "type": { "const": "locality" } } }, "then": { "required": ["area_id", "generation"], "not": { "required": ["community_id"] } } }
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "issuer"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "community_id",
+          "role",
+          "may_issue"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "membership"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "community_id",
+          "role",
+          "ring"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "session"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "community_id",
+          "host_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "device",
+              "referral"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "community_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "standing"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "community_id",
+          "standing"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "credential"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "community_id",
+          "schema",
+          "schema_hash",
+          "claims"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "locality"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "area_id",
+          "generation"
+        ],
+        "not": {
+          "required": [
+            "community_id"
+          ]
+        }
+      }
+    }
   ]
 }
