@@ -45,7 +45,8 @@
         1,
         2,
         3
-      ]
+      ],
+      "description": "On a membership card: the widest ring the member may search. On a credential (added in 0.6.0): where it counts, 1 the issuing community only, 2 any community the member belongs to, 3 any community that trusts the issuer; absent means 1."
     },
     "may_issue": {
       "type": "array",

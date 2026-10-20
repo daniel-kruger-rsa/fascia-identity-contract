@@ -234,7 +234,11 @@ may name the `w3c_type` its credentials would carry if exported. A credential na
 community published in the register with `schema_hash`; a computed credential also names the
 policy profile it was produced under in `policy_hash`. `claims` is what the card says: up to 32
 snake_case entries of strings, integers, booleans or short arrays, at most 2,048 bytes. A card
-lasts at most 365 days, cannot be passed to another device, and is revoked like any card. An
+lasts at most 365 days, cannot be passed to another device, and is revoked like any card. Its issuer
+sets its `ring`, where it counts: 1, only in the issuing community; 2, in any community the member
+belongs to; 3, with any community that trusts the issuer. A credential issued without a ring
+reaches 1. `acceptCredential` checks the ring first, from the receiving community (`home`) and
+the memberships presented in the same request (`context.memberships`). An
 issuer link may carry `may_issue_schemas` to appoint a steward for some types only.
 
 Documents are addressed by the SHA-256 of their canonical JSON and never change. A trust list is

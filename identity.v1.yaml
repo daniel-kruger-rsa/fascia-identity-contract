@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Fascia Identity
-  version: 0.5.0
+  version: 0.6.0
   description: |
     Community keys and revocation lists for verifiers, a verify endpoint for hosts, audit
     entries from rail services, and the Community Register module's Phase 1 slice.
@@ -190,7 +190,7 @@ components:
               description: The credentials presented, after the nine checks. Added in 0.3.0.
               items:
                 type: object
-                required: [community_id, schema, schema_hash, policy_hash, claims, claim_ids, expires_at, within]
+                required: [community_id, schema, schema_hash, policy_hash, claims, claim_ids, expires_at, within, ring]
                 properties:
                   community_id: { type: string, format: uuid, description: The issuing community. }
                   schema: { type: string, description: "The credential's type, name/version." }
@@ -200,6 +200,13 @@ components:
                   claim_ids: { type: array, items: { type: string } }
                   expires_at: { type: integer }
                   within: { type: array, items: { type: string, format: uuid } }
+                  ring:
+                    type: integer
+                    enum: [1, 2, 3]
+                    description: |
+                      Where the credential counts, set by its issuer: 1, only in the issuing
+                      community; 2, in any community the member belongs to; 3, with any community
+                      that trusts the issuer. A credential issued without one reaches 1. Added in 0.6.0.
             standing:
               type: array
               items:
