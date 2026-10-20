@@ -237,7 +237,12 @@ snake_case entries of strings, integers, booleans or short arrays, at most 2,048
 lasts at most 365 days, cannot be passed to another device, and is revoked like any card. An
 issuer link may carry `may_issue_schemas` to appoint a steward for some types only.
 
-Documents are addressed by the SHA-256 of their canonical JSON and never change. `/verify` adds
+Documents are addressed by the SHA-256 of their canonical JSON and never change. A trust list is
+revised by publishing a new edition under the same `list` name: **its current edition is the
+newest document with that name published by that community**, the last match in
+`listDocuments`, which answers oldest first. A service can subscribe to a list by community and
+name (`subscribe` in `acceptCredential`, resolved by the registry cache) instead of pinning a
+hash. `/verify` adds
 `credentials`: issuer, type, claims and the levels above the issuer. Whether to accept one, and
 what it grants, is the receiving service's policy. There is no network-wide default trust:
 `acceptCredential` in `@fascia/dcp-verify` trusts the service's own hierarchy (`home`: every
@@ -271,6 +276,7 @@ mapping.
 | `link_unknown` | 404 | The community is not linked to that parent |
 | `document_malformed`, `document_invalid` | 400, 422 | A document was refused: wrong shape, a fraction, over 16 KB, or not signed by the community's active key |
 | `document_unknown` | 404 | No such document |
+| `key_in_use` | 409 | That key already belongs to a community (`community_ids` names it); a key belongs to one community only |
 | `community_unknown` | 404 | No such community |
 | `not_found` | 404 | No such path, with or without a key |
 

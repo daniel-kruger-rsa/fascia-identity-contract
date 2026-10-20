@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Fascia Identity
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Community keys and revocation lists for verifiers, a verify endpoint for hosts, audit
     entries from rail services, and the Community Register module's Phase 1 slice.
@@ -429,6 +429,7 @@ paths:
                   community_id: { type: string, format: uuid }
         "400": { $ref: "#/components/responses/Error" }
         "401": { $ref: "#/components/responses/Error" }
+        "409": { description: "`key_in_use`: first_key already belongs to a community, named in `community_ids`. A key belongs to one community only, so repeating a registration is refused rather than creating a second community.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "422": { description: "`proof_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
 
   /v1/register/communities/{id}/status:
@@ -479,6 +480,7 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "401": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
+        "409": { description: "`key_in_use`: the new key belongs to another community.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "422": { description: "`handover_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
 
   /v1/register/communities/{id}/parent:
@@ -612,6 +614,9 @@ paths:
       operationId: listDocuments
       tags: [Verifiers]
       summary: The documents a community has published
+      description: |
+        Oldest first. A trust list is revised by publishing a new edition under the same list
+        name; its current edition is the newest document with that name, the last match here.
       security: []
       parameters: [{ $ref: "#/components/parameters/communityId" }]
       responses:
