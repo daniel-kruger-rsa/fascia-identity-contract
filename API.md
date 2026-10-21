@@ -208,6 +208,8 @@ POST /v1/register/communities/{id}/parent           (host key)
 POST /v1/register/communities/{id}/parent/end       (host key)
 PUT  /v1/register/communities/{id}/listing-optins   (host key)
 PUT  /v1/register/communities/{id}/documents        (host key)
+PUT  /v1/register/communities/{id}/areas            (host key)
+GET  /v1/identity/communities?within={area_id}      (public)
 GET  /v1/identity/communities/{id}/documents        (public)
 GET  /v1/identity/communities/{id}/documents/{hash} (public)
 ```
@@ -255,6 +257,19 @@ documents it subscribes to; it also applies pinned schemas or policies, a maximu
 `assurance` for identity cards (`in_person` < `document_chip` < `government_record`) and a grant
 mapping.
 
+**Home areas.** A community may name up to 20 official Fascia Places areas as its home area:
+Cedar Lakes Homeowners Association its sub-place, a chamber a metro. The agent signs
+`{ community_id, areas, at }`, each area `{ area_id, generation, country }`; an empty list clears
+it, and a community that must not be found by place names none. The service checks every area
+with Places under its own Places host key (`PLACES_URL`, `PLACES_HOST_KEY`) and stores the level,
+name and ancestors Places gives, so the keys response carries `areas` and a search needs no
+Places call. Places is told only the area, its country and its generation.
+
+`GET /v1/identity/communities?within={area_id}` answers the active communities whose home area
+is that area or lies under it, with the areas that matched; add `generation` to keep to one pack.
+Community names are not in the register, so a host shows the names it knows. A home area never
+makes anyone a member and does not change rings: it only helps people find a community.
+
 ## Errors
 
 `{ "error": { "code", "message" } }`. Switch on `code`, never on the status alone.
@@ -281,6 +296,9 @@ mapping.
 | `document_malformed`, `document_invalid` | 400, 422 | A document was refused: wrong shape, a fraction, over 16 KB, or not signed by the community's active key |
 | `document_unknown` | 404 | No such document |
 | `key_in_use` | 409 | That key already belongs to a community (`community_ids` names it); a key belongs to one community only |
+| `areas_invalid`, `area_unknown` | 422 | A home area was refused: a signature or time is wrong, or Places holds no such official area for that country and generation (`area_ids` names them) |
+| `community_suspended` | 422 | A suspended community cannot change its home area |
+| `places_unavailable` | 503 | Places could not be asked, so the areas were not checked. Retry later |
 | `community_unknown` | 404 | No such community |
 | `not_found` | 404 | No such path, with or without a key |
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Fascia Identity
-  version: 0.6.0
+  version: 0.7.0
   description: |
     Community keys and revocation lists for verifiers, a verify endpoint for hosts, audit
     entries from rail services, and the Community Register module's Phase 1 slice.
@@ -16,6 +16,10 @@ info:
     name/version) and pins the schema document the issuer published in the register
     (`schema_hash`). `/verify` answers what each credential says and who issued it; whether to
     accept it, and what it is worth, is the receiving service's own policy.
+
+    **Home areas.** A community may name up to 20 official Fascia Places areas as its home area,
+    so hosts can find communities by place. The service checks each with Places and copies its
+    level, name and ancestors. A home area never makes anyone a member and does not change rings.
 
     The service issues nothing and stores no member's key or claim. Claims pass phone to phone;
     the spine first sees one when a member presents it.
@@ -128,7 +132,25 @@ components:
           type: array
           description: Ancestors whose listings this community receives. Only current ancestors are shown. Added in 0.2.0.
           items: { type: string, format: uuid }
+        areas:
+          type: array
+          description: The community's home area, if it named one. Added in 0.7.0.
+          items: { $ref: "#/components/schemas/HomeArea" }
         updated_at: { type: integer }
+    HomeArea:
+      type: object
+      description: An official Fascia Places area, with what Places said about it when it was set.
+      required: [area_id, generation, country, level, name, ancestors]
+      properties:
+        area_id: { type: string, format: uuid }
+        generation: { type: string, example: mdb-zaf-2020, description: The Places pack generation the id belongs to. }
+        country: { type: string, example: ZA }
+        level: { type: string, enum: [ADM1, ADM2, ADM3, ADM4, MP, SP] }
+        name: { type: string, description: A label snapshot; Places stays the source of names. }
+        ancestors:
+          type: array
+          description: The area's Places ancestors, nearest first.
+          items: { type: string, format: uuid }
     RevocationList:
       description: See `schemas/revocation-list.json`. An untouched community answers `seq` 0, no entries and no signature.
       type: object
@@ -302,6 +324,41 @@ paths:
               schema: { $ref: "#/components/schemas/CommunityKeys" }
         "304": { description: Unchanged since the ETag sent in If-None-Match. }
         "404": { $ref: "#/components/responses/Error" }
+
+  /v1/identity/communities:
+    get:
+      operationId: listCommunitiesWithin
+      security: []
+      tags: [Verifiers]
+      summary: The active communities whose home area is at or under an area
+      description: |
+        Matches a home area equal to `within` or with `within` among its ancestors, so asking with
+        a municipality finds the communities of its sub-places. At most 200 communities. Community
+        names are not in the register; a host shows the names it knows.
+      parameters:
+        - { name: within, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: generation, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Matches, each with the home areas that matched. Carries an ETag and `Cache-Control max-age=300`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [within, generation, communities]
+                properties:
+                  within: { type: string, format: uuid }
+                  generation: { type: string, nullable: true }
+                  communities:
+                    type: array
+                    items:
+                      type: object
+                      required: [community_id, areas]
+                      properties:
+                        community_id: { type: string, format: uuid }
+                        areas: { type: array, items: { $ref: "#/components/schemas/HomeArea" } }
+        "304": { description: Unchanged since the ETag sent in If-None-Match. }
+        "400": { $ref: "#/components/responses/Error" }
 
   /v1/identity/communities/{id}/revocations:
     get:
@@ -577,6 +634,58 @@ paths:
         "404": { $ref: "#/components/responses/Error" }
         "422": { description: "`optin_invalid`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
 
+
+  /v1/register/communities/{id}/areas:
+    put:
+      operationId: setHomeAreas
+      tags: [Community Register]
+      summary: Name the community's home area
+      description: |
+        Replaces the set: up to 20 distinct official Fascia Places areas (ADM1 to ADM4, main place
+        or sub-place), never a drawn polygon, a structure or a street. An empty list clears it; a
+        community that must not be found by place names none. Signed by the community's active key
+        over the canonical `{ community_id, areas, at }`. The service checks every area with Places
+        under its own Places host key and answers with what Places said. A suspended community
+        cannot change its areas, and is not found by `listCommunitiesWithin`.
+      security: [{ hostKey: [] }]
+      parameters: [{ $ref: "#/components/parameters/communityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [areas, at, sig]
+              properties:
+                areas:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [area_id, generation, country]
+                    properties:
+                      area_id: { type: string, format: uuid }
+                      generation: { type: string, example: mdb-zaf-2020 }
+                      country: { type: string, pattern: "^[A-Z]{2}$" }
+                at: { type: integer }
+                sig: { type: string }
+      responses:
+        "200":
+          description: Set.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [community_id, areas]
+                properties:
+                  community_id: { type: string, format: uuid }
+                  areas: { type: array, items: { $ref: "#/components/schemas/HomeArea" } }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { description: "`areas_invalid`, `area_unknown` (with `area_ids`), or `community_suspended`.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "503": { description: "`places_unavailable`: the areas could not be checked with Places.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
 
   /v1/register/communities/{id}/documents:
     put:

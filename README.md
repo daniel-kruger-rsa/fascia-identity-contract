@@ -5,7 +5,7 @@ Passport (DCP). It is published so that a host can read it, vendor a copy, gener
 diff against it when it changes, with the prose reference, the schemas and the conformance vectors
 beside it.
 
-- **[identity.v1.yaml](identity.v1.yaml)** — the contract. Current version: **0.6.0**.
+- **[identity.v1.yaml](identity.v1.yaml)** — the contract. Current version: **0.7.0**.
 - **[API.md](API.md)** — the API documentation: the presentation a member's phone sends, the nine
   checks every receiver runs, each endpoint with worked responses, and what a host must do. Where it
   and the contract disagree, the contract wins.
@@ -15,8 +15,8 @@ beside it.
   every step of every file conforms.
 - **[Browse the contract](https://daniel-kruger-rsa.github.io/fascia-identity-contract/)** — the
   same file rendered as a page (Redoc), always the version on `main`.
-- Every published version is tagged (`v0.6.0`), so a vendored copy can pin one:
-  `https://raw.githubusercontent.com/daniel-kruger-rsa/fascia-identity-contract/v0.6.0/identity.v1.yaml`
+- Every published version is tagged (`v0.7.0`), so a vendored copy can pin one:
+  `https://raw.githubusercontent.com/daniel-kruger-rsa/fascia-identity-contract/v0.7.0/identity.v1.yaml`
 
 **Host**, used throughout: a platform that builds the passport into its own app. Its members'
 phones hold the passports; the host's backend relays their requests and holds a host key.
